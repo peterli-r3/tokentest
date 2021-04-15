@@ -1,6 +1,7 @@
 package com.template.flows;
 
 import co.paralleluniverse.fibers.Suspendable;
+import com.r3.corda.lib.tokens.contracts.commands.MoveTokenCommand;
 import com.r3.corda.lib.tokens.contracts.types.TokenType;
 import com.r3.corda.lib.tokens.workflows.flows.move.MoveTokensUtilities;
 import com.r3.corda.lib.tokens.workflows.flows.rpc.MoveFungibleTokensHandler;
@@ -10,15 +11,18 @@ import com.r3.corda.lib.tokens.workflows.internal.flows.finality.ObserverAwareFi
 import com.template.contracts.FungEvoTokenContract;
 import com.template.states.FungEvoTokenType;
 import net.corda.core.contracts.Amount;
+import net.corda.core.crypto.TransactionSignature;
 import net.corda.core.flows.*;
 import net.corda.core.identity.Party;
 import net.corda.core.node.services.Vault;
 import net.corda.core.node.services.vault.QueryCriteria;
 import net.corda.core.transactions.SignedTransaction;
 import net.corda.core.transactions.TransactionBuilder;
+import net.corda.core.utilities.UntrustworthyData;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 public class TransferFungEvoToken {
@@ -51,7 +55,7 @@ public class TransferFungEvoToken {
 
             Amount<TokenType> amount = new Amount<>(quantity, fungEvoTokenType.toPointer(FungEvoTokenType.class));
             TransactionBuilder txBuilder = new TransactionBuilder(getServiceHub().getNetworkMapCache().getNotaryIdentities().get(0));
- //                   .addCommand(COMMAND, TIE Keys)
+//                    .addCommand(new MoveTokenCommand(), Arrays.asList(this.receiver.getOwningKey(),this.observer.getOwningKey()));
             MoveTokensUtilities.addMoveFungibleTokens(txBuilder,getServiceHub(),amount, receiver,getOurIdentity());
 
             txBuilder.verify(getServiceHub());
@@ -59,8 +63,10 @@ public class TransferFungEvoToken {
 
             FlowSession receiverSession = initiateFlow(receiver);
             FlowSession observerSession = initiateFlow(observer);
+
             SignedTransaction stx = subFlow(new CollectSignaturesFlow(ptx, Arrays.asList(receiverSession, observerSession)));
             SignedTransaction ftx = subFlow(new ObserverAwareFinalityFlow(stx, Arrays.asList(receiverSession, observerSession)));
+
 
             //Add the new token holder to the distribution list
             subFlow(new UpdateDistributionListFlow(ftx));
@@ -81,13 +87,6 @@ public class TransferFungEvoToken {
         @Suspendable
         @Override
         public Void call() throws FlowException {
-
-//            SignedTransaction signedTransaction = subFlow(new SignTransactionFlow(counterSession){
-//                @Override
-//                protected void checkTransaction(@NotNull SignedTransaction stx) throws FlowException {
-//
-//                }
-//            });
 
             //simply use the MoveFungibleTokensHandler as the responding flow
             subFlow(new ObserverAwareFinalityFlowHandler(counterSession));

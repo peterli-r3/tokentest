@@ -48,7 +48,7 @@ public class NormalTransaction {
                     .addOutputState(output)
                     .addCommand(new NormalContract.Commands.Send(),
                             Arrays.asList(this.sender.getOwningKey(),this.receiver.getOwningKey(),this.observer.getOwningKey()));
-            //At this step, we sre requesdting
+            //At this step, we sre requesdting additional signatures.
 
             builder.verify(getServiceHub());
             final SignedTransaction ptx = getServiceHub().signInitialTransaction(builder);
