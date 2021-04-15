@@ -64,7 +64,7 @@ public class TransferFungEvoToken {
 
             //Add the new token holder to the distribution list
             subFlow(new UpdateDistributionListFlow(ftx));
-            return stx;
+            return ftx;
         }
 
     }

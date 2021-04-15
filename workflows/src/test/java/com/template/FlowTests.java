@@ -6,6 +6,7 @@ import com.r3.corda.lib.tokens.contracts.types.TokenType;
 import com.r3.corda.lib.tokens.workflows.utilities.QueryUtilities;
 import com.template.flows.CreateFungEvoTokenType;
 import com.template.flows.IssueFungEvoToken;
+import com.template.flows.NormalTransaction;
 import com.template.flows.TransferFungEvoToken;
 import com.template.states.FungEvoTokenType;
 import net.corda.core.contracts.Amount;
@@ -65,6 +66,7 @@ public class FlowTests {
         Party investorA = a.getInfo().getLegalIdentitiesAndCerts().get(0).getParty();
         Party investorB = b.getInfo().getLegalIdentitiesAndCerts().get(0).getParty();
         Party tie =  c.getInfo().getLegalIdentitiesAndCerts().get(0).getParty();
+        Party notary = network.getNotaryNodes().get(0).getInfo().getLegalIdentitiesAndCerts().get(0).getParty();
 
         //Create TokenType at A
         CreateFungEvoTokenType myFlow = new CreateFungEvoTokenType(investorA,"hello");
@@ -112,14 +114,37 @@ public class FlowTests {
 
 
         System.out.println("------------------------");
-        System.out.println(ptx3.getRequiredSigningKeys().size());
+        System.out.println("Required Signing keys "+ptx3.getRequiredSigningKeys().size());
         System.out.println(ptx3.getRequiredSigningKeys());
-        System.out.println("Signers------------------------");
-        System.out.println(ptx3.getTx().getCommands().get(0).getSigners());
+        System.out.println("InvestorA Key: "+investorA.getOwningKey().toString());
+        System.out.println("InvestorB Key: "+investorB.getOwningKey().toString());
+        System.out.println("TIE Key: "+tie.getOwningKey().toString());
+        System.out.println("Notary Key: "+notary.getOwningKey().toString());
 
-        System.out.println("Signers------------------------");
+        System.out.println("How many are command signatures------------------------");
         System.out.println(ptx3.getTx().getCommands().get(0).getSigners());
     }
 
+    @Test
+    public void normalTransactionWithMoreSigners() throws ExecutionException, InterruptedException {
+        Party investorA = a.getInfo().getLegalIdentitiesAndCerts().get(0).getParty();
+        Party investorB = b.getInfo().getLegalIdentitiesAndCerts().get(0).getParty();
+        Party tie =  c.getInfo().getLegalIdentitiesAndCerts().get(0).getParty();
 
+        //Create TokenType at A
+        NormalTransaction.NormalTransactionInitiator myFlow = new NormalTransaction.NormalTransactionInitiator(investorB,tie);
+        Future<SignedTransaction> future = a.startFlow(myFlow);
+        network.runNetwork();
+
+        SignedTransaction ptx3 = future.get();
+
+        System.out.println("------------------------");
+        System.out.println("Required Signing keys "+ptx3.getRequiredSigningKeys().size());
+        System.out.println(ptx3.getRequiredSigningKeys());
+        System.out.println("InvestorA Key: "+investorA.getOwningKey().toString());
+        System.out.println("InvestorB Key: "+investorB.getOwningKey().toString());
+        System.out.println("TIE Key: "+tie.getOwningKey().toString());
+        System.out.println("How many are command signatures ------------------------");
+        System.out.println(ptx3.getTx().getCommands().get(0).getSigners());
+    }
 }
