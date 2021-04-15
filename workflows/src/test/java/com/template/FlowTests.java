@@ -123,6 +123,16 @@ public class FlowTests {
 
         System.out.println("How many are command signatures------------------------");
         System.out.println(ptx3.getTx().getCommands().get(0).getSigners());
+
+        System.out.println("How many sigs are on the transaction------------------------");
+        System.out.println(ptx3.getSigs().size());
+        System.out.println(ptx3.getSigs().get(0).getBy());
+        System.out.println(ptx3.getSigs().get(1).getBy());
+        System.out.println(ptx3.getSigs().get(2).getBy());
+        System.out.println(ptx3.getSigs().get(3).getBy());
+
+
+
     }
 
     @Test

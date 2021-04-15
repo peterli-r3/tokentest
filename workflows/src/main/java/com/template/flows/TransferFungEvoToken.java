@@ -55,7 +55,6 @@ public class TransferFungEvoToken {
 
             Amount<TokenType> amount = new Amount<>(quantity, fungEvoTokenType.toPointer(FungEvoTokenType.class));
             TransactionBuilder txBuilder = new TransactionBuilder(getServiceHub().getNetworkMapCache().getNotaryIdentities().get(0));
-//                    .addCommand(new MoveTokenCommand(), Arrays.asList(this.receiver.getOwningKey(),this.observer.getOwningKey()));
             MoveTokensUtilities.addMoveFungibleTokens(txBuilder,getServiceHub(),amount, receiver,getOurIdentity());
 
             txBuilder.verify(getServiceHub());
@@ -64,9 +63,11 @@ public class TransferFungEvoToken {
             FlowSession receiverSession = initiateFlow(receiver);
             FlowSession observerSession = initiateFlow(observer);
 
-            SignedTransaction stx = subFlow(new CollectSignaturesFlow(ptx, Arrays.asList(receiverSession, observerSession)));
-            SignedTransaction ftx = subFlow(new ObserverAwareFinalityFlow(stx, Arrays.asList(receiverSession, observerSession)));
+            TransactionSignature recSig = receiverSession.sendAndReceive(TransactionSignature.class, ptx).unwrap(it -> it);
+            TransactionSignature obsSig = observerSession.sendAndReceive(TransactionSignature.class, ptx).unwrap(it -> it);
 
+            SignedTransaction ftx = ptx.withAdditionalSignatures(Arrays.asList(recSig, obsSig));
+            ftx = subFlow(new ObserverAwareFinalityFlow(ftx, Arrays.asList(receiverSession, observerSession)));
 
             //Add the new token holder to the distribution list
             subFlow(new UpdateDistributionListFlow(ftx));
@@ -87,6 +88,9 @@ public class TransferFungEvoToken {
         @Suspendable
         @Override
         public Void call() throws FlowException {
+
+            SignedTransaction ptx = counterSession.receive(SignedTransaction.class).unwrap(it -> it);
+            counterSession.send(getServiceHub().createSignature(ptx));
 
             //simply use the MoveFungibleTokensHandler as the responding flow
             subFlow(new ObserverAwareFinalityFlowHandler(counterSession));
